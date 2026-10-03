@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL with support for the pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: semantic-engine-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret_password
+      POSTGRES_DB: semantic_hub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  # 2. RabbitMQ for MassTransit (event bus between agents)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: semantic-engine-rabbitmq
+    ports:
+      - "5672:5672"   # Message sending port (AMQP)
+      - "15672:15672" # Web management interface (login/password: guest/guest)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: always
+
+  # 3. Metabase for saving SQL queries and vector analytics
+  metabase:
+    image: metabase/metabase:v0.51.9
+    container_name: semantic-engine-metabase
+    ports:
+      - "3000:3000"   # Metabase web interface
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabase_internal
+      MB_DB_PORT: 5432
+      MB_DB_USER: admin
+      MB_DB_PASS: secret_password
+      MB_DB_HOST: postgres
+    depends_on:
+      - postgres
+    volumes:
+      - metabase_data:/metabase-data
+    restart: always
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  metabase_data:
