@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Api/">
+    <Project Path="src/Api/Semantic.Engine.Gateway/Semantic.Engine.Gateway.csproj" Id="91007d77-56ad-4e6b-81af-8d04a9690e52" />
+  </Folder>
+  <Folder Name="/src/Clients/">
+    <Project Path="src/Clients/Semantic.Engine.Client.Cli/Semantic.Engine.Client.Cli.csproj" Id="ef20e5c5-434c-4d40-af97-cdab9b9391c0" />
+  </Folder>
+  <Folder Name="/src/Services/">
+    <Project Path="src/Services/Semantic.Engine.Orchestrator/Semantic.Engine.Orchestrator.csproj" Id="3f361f47-0727-48a8-b2fd-8fcc0a3820e4" />
+    <Project Path="src/Services/Semantic.Engine.Workers.Data/Semantic.Engine.Workers.Data.csproj" Id="8930bfdd-d3fd-457f-886e-4e2b34bc419f" />
+    <Project Path="src/Services/Semantic.Engine.Workers.Tools/Semantic.Engine.Workers.Tools.csproj" Id="824c928a-9e7a-40cb-bdd4-b34eba6ef581" />
+  </Folder>
+</Solution>

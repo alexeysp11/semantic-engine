@@ -1,5 +1,11 @@
 # semantic-engine
 
+![.NET Version](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
+![Architecture](https://img.shields.io/badge/Architecture-Event--Driven%20(EDA)-orange)
+![Orchestration](https://img.shields.io/badge/Orchestrator-MassTransit%20%7C%20RabbitMQ-red?logo=rabbitmq&logoColor=white)
+![AI Framework](https://img.shields.io/badge/AI%20Core-Microsoft.Extensions.AI-blue?logo=microsoft&logoColor=white)
+![Vector DB](https://img.shields.io/badge/Vector%20Storage-PostgreSQL%20%2B%20pgvector-emerald?logo=postgresql&logoColor=white)
+
 Distributed Event-Driven Multi-Agent Runtime built on .NET 10.
 
 ## Overview
@@ -10,27 +16,38 @@ Unlike fragile, linear automation scripts and traditional synchronous RAG system
 ## Architecture & Core Components
 The system is built as an Event-Driven Microservice Architecture (EDA) on the **.NET 10** platform, orchestrated via MassTransit and RabbitMQ. Each stage of model reasoning, code execution, or agent interaction is isolated and does not block web server threads.
 
-1. **Gateway Service (Minimal API):**
+1. **Client Application (CLI Client):**
+   * Serves as the primary user interface, providing a native console experience that emulates a local AI environment.
+   * Abstracted from the core business logic, communicating with the backend exclusively via HTTP requests and SSE streams.
+   * Architecturally decoupled, allowing seamless future integration of Web dashboards, Telegram bots, or IDE extensions without changes to the backend.
+2. **Gateway Service (Minimal API):**
    * Provides the entry point for user or system triggers.
    * Manages sessions, security context (JWT), and real-time streaming of agent responses via Server-Sent Events (SSE).
-2. **Agent Orchestrator Service (Kernel Core):**
+3. **Agent Orchestrator Service (Kernel Core):**
    * The backend core of the system, implementing the agent execution loop (Agent Loop) on top of `Microsoft.Extensions.AI` (`IChatClient`) abstractions.
    * Responsible for orchestrating the hierarchy of agent processes, managing distributed state (State Management), and isolating memory context.
-3. **Distributed Tool Execution Worker:**
+4. **Distributed Tool Execution Worker:**
    * An isolated environment for executing programmatic code and utilities requested by the LLM (local file system operations, CLI commands, external API requests, database integration).
-4. **Data & Embedding Worker:**
+5. **Data & Embedding Worker:**
    * A background service for parsing, tokenizing, and semantically analyzing incoming data streams.
    * Responsible for generating vector embeddings via local Ollama models (`nomic-embed-text`) and indexing them.
 
 ### Integration Flow
 ```text
-[Gateway / SSE] ◄──(User/System Trigger)──► [Agent Orchestrator (IChatClient Loop)]
-       │                                                    │
-       ▼ (MassTransit Events)                               ▼ (ExecuteToolCommand)
-[Data / Embedding Worker]                        [Distributed Tool Worker]
-       │                                                    │
-       ▼                                                    ▼
-[PostgreSQL + pgvector] (OLTP State)             [Local Files / DB / Foreign APIs]
+       [ Clients Layer: CLI App / Web / Telegram BOTS ]
+                             │
+                             ▼ (HTTP / SSE Requests)
+                     [ Gateway / SSE ] 
+                             ▲
+                             │ (User/System Trigger)
+                             ▼
+            [ Agent Orchestrator (IChatClient Loop) ]
+             │                                     │
+             ▼ (MassTransit Events)                ▼ (ExecuteToolCommand)
+[ Data / Embedding Worker ]             [ Distributed Tool Worker ]
+             │                                     │
+             ▼                                     ▼
+[ PostgreSQL + pgvector ] (OLTP State)  [ Local Files / DB / Foreign APIs ]
 ```
 
 ---
