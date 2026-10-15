@@ -8,7 +8,9 @@ namespace Semantic.Engine.Client.Cli.Rendering;
 /// </summary>
 public static class StatusText
 {
-    /// <summary>The caption shown before the first status event of a turn arrives.</summary>
+    /// <summary>
+    /// The caption shown before the first status event of a turn arrives.
+    /// </summary>
     public const string Initial = "[yellow]Agent is thinking...[/]";
 
     /// <summary>
