@@ -7,17 +7,17 @@ This roadmap outlines the systematic, step-by-step engineering sequence required
 ## 🏗️ Phase 1: Shared Contracts & Infrastructure Bootstrap
 *Objective: Define the shared type system and data models to allow MassTransit and RabbitMQ to route messages between services seamlessly.*
 
-- [ ] **1.1. Create `Semantic.Engine.Contracts` Project**
+- Pending ⏳ **1.1. Create `Semantic.Engine.Contracts` Project**
   * Establish a class library for MassTransit commands, events, and state schemas.
   * Define `StartAgentSessionCommand` (triggered by Gateway).
   * Define `ExecuteToolCommand` and `ToolExecutedEvent` (payload passing between Orchestrator and Tool Worker).
   * Define `AgentTokenGeneratedEvent` (for real-time SSE streaming back to the client).
 
-- [ ] **1.2. Define the Core State Machine (Saga) States**
+- Pending ⏳ **1.2. Define the Core State Machine (Saga) States**
   * Implement `AgentSessionState` class inheriting from MassTransit's `SagaStateMachineInstance`.
   * Properties must include: `CorrelationId`, `CurrentState`, `ConversationHistoryJson`, `LastStateSnapshot`.
 
-- [ ] **1.3. Configure Docker-Compose Environments**
+- Pending ⏳ **1.3. Configure Docker-Compose Environments**
   * Initialize **RabbitMQ** (with Management plugin enabled).
   * Initialize **PostgreSQL** (and install the `pgvector` extension via migration script).
   * Initialize **ClickHouse** (configure target tables for thought tracking logs using the `Log` or `MergeTree` engines).
@@ -27,15 +27,15 @@ This roadmap outlines the systematic, step-by-step engineering sequence required
 ## 🧠 Phase 2: Agent Orchestrator & Local LLM Integration
 *Objective: Build the core reasoning loop using Microsoft.Extensions.AI and implement automated context management.*
 
-- [ ] **2.1. Integrate `qwen2.5-coder:7b` via Ollama**
+- Pending ⏳ **2.1. Integrate `qwen2.5-coder:7b` via Ollama**
   * Pull the model locally: `ollama run qwen2.5-coder:7b`.
   * Set up `appsettings.json` in the Orchestrator to map `AiSettingsOptions` cleanly using the .NET Options Pattern.
 
-- [ ] **2.2. Implement the Asynchronous Agent Loop**
+- Pending ⏳ **2.2. Implement the Asynchronous Agent Loop**
   * Create a background service wrapping `IChatClient.GetStreamingResponseAsync()`.
   * Inject a highly rigid, engineering-focused **System Prompt** forcing the model to respect JSON tool-calling constraints and maintain professional C# output.
 
-- [ ] **2.3. Implement the Context Management & Summarization Engine**
+- Pending ⏳ **2.3. Implement the Context Management & Summarization Engine**
   * Write a service that counts context tokens or tracking message thresholds.
   * Implement active history pruning: when thresholds are breached, trigger an internal background summarization prompt to condense old discussion threads into a single checkpoint message, truncating the operational SQL/PostgreSQL database state.
 
@@ -44,13 +44,13 @@ This roadmap outlines the systematic, step-by-step engineering sequence required
 ## 🛠️ Phase 3: Distributed Workers Implementation
 *Objective: Give the agent its "hands and eyes" by establishing isolated, safe environments for system operations and semantic data analysis.*
 
-- [ ] **3.1. Build `Semantic.Engine.Workers.Tools`**
+- Pending ⏳ **3.1. Build `Semantic.Engine.Workers.Tools`**
   * Create a Worker Service implementing MassTransit `IConsumer<ExecuteToolCommand>`.
   * **File Tool Implementation:** Add atomic write, read, and patch capabilities (using safe path validations).
   * **Network Tool Implementation:** Integrate a non-blocking `HttpClient` factory allowing the LLM to make target API requests.
   * **Compilation Criticism Loop:** Add a tool that triggers `dotnet build / dotnet test` in a temporary execution directory, intercepts CLI compiler errors, and returns them natively within the `ToolExecutedEvent` payload to force agent self-correction.
 
-- [ ] **3.2. Build `Semantic.Engine.Workers.Data`**
+- Pending ⏳ **3.2. Build `Semantic.Engine.Workers.Data`**
   * Pull the `all-minilm:l6-v2` embedding model via Ollama (~90 MB RAM allocation).
   * Implement background text parsing, tokenization, and vector generation.
   * Configure Entity Framework Core mappings to index generated embeddings directly into PostgreSQL `pgvector` tables.
@@ -60,11 +60,11 @@ This roadmap outlines the systematic, step-by-step engineering sequence required
 ## 🌐 Phase 4: API Gateway & SSE Streaming Pipeline
 *Objective: Connect the asynchronous microservice bus back to synchronous client triggers using Minimal APIs and Server-Sent Events.*
 
-- [ ] **4.1. Implement Gateway Endpoint Infrastructure**
+- Pending ⏳ **4.1. Implement Gateway Endpoint Infrastructure**
   * Build a Minimal API endpoint `POST /api/agent/session/start` that publishes `StartAgentSessionCommand` to RabbitMQ.
   * Implement `POST /api/agent/prompt` to stream subsequent interactions into the existing MassTransit Saga flow.
 
-- [ ] **4.2. Build the SSE Streaming Bridge**
+- Pending ⏳ **4.2. Build the SSE Streaming Bridge**
   * Implement a real-time HTTP streaming controller using Server-Sent Events (`Response.WriteAsync`).
   * Create an internal bridge (using a localized MassTransit consumer or an in-memory Pub/Sub like Channels/Redis) that intercepts `AgentTokenGeneratedEvent` from the bus and immediately pumps the text tokens into the client's open HTTP connection.
 
@@ -73,14 +73,37 @@ This roadmap outlines the systematic, step-by-step engineering sequence required
 ## 💻 Phase 5: Client Application (TUI Engine)
 *Objective: Replace volatile standard console reads with a professional Terminal User Interface inspired by Claude Code.*
 
-- [ ] **5.1. Implement Multi-Line Clipboard Input**
+- Pending ⏳ **5.1. Implement Multi-Line Clipboard Input**
   * Refactor `Program.cs` in `Semantic.Engine.Cli` to use an advanced `Console.ReadKey(intercept: true)` loop.
   * Map **Ctrl + Enter** as the explicit submission trigger, ensuring multi-line C# snippets can be cleanly pasted without breaking terminal formatting.
 
-- [ ] **5.2. Integrate `Spectre.Console` Visuals**
+- Pending ⏳ **5.2. Integrate `Spectre.Console` Visuals**
   * Replace default console outputs with `AnsiConsole` rendering components.
   * Implement live, animated spinners (`AnsiConsole.Status`) to cleanly display background processing states (e.g., `[yellow]Agent is thinking...[/]`, `[blue]Executing dotnet build...[/]`).
   * Enclose streamed text outputs inside structured panels (`Panel`) with strict language color-coding for readability.
+
+---
+
+## 🛡️ Phase 6: Hardening & Delivery
+*Objective: Close the gaps that block a reliable end-to-end run of the PoC and make it easy to start and review.*
+
+- Pending ⏳ **6.1. Hide Textual Tool Calls from the Stream**
+  * Withhold tool calls that the model writes as JSON text so that they are not rendered in the TUI.
+
+- Pending ⏳ **6.2. Memory Search Tool**
+  * Add the `search_memory` tool that queries `pgvector` by cosine distance; it is executed by `Semantic.Engine.Workers.Data` and routed by the saga.
+
+- Pending ⏳ **6.3. Tool Watchdog**
+  * Report a timeout to sessions that wait in `AwaitingTool` for longer than the configured limit.
+
+- Pending ⏳ **6.4. Gateway API Key**
+  * Protect the `/api/agent` endpoints with an optional shared API key.
+
+- Pending ⏳ **6.5. Startup Script and CI**
+  * Add `scripts/start-all.ps1` and a GitHub Actions workflow that builds the solution and runs the tests.
+
+- Pending ⏳ **6.6. Documentation**
+  * Add the [User Guide](../user-guide.md) and the [Architecture Reference](../architecture.md).
 
 ---
 

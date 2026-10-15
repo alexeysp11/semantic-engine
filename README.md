@@ -11,7 +11,7 @@ Distributed Event-Driven Multi-Agent Runtime built on .NET 10.
 ## 📋 Overview
 **semantic-engine** is a distributed, asynchronous execution runtime and infrastructure backend core for autonomous AI agents. The project is designed around an Operating System metaphor, where agents function as isolated system processes, and the message broker serves as a reactive system bus.
 
-Unlike fragile, linear automation scripts and traditional synchronous RAG systems, this platform provides a resilient, enterprise-grade ecosystem. It enables running a local reasoning loop (Thought -> Action -> Observation) in a fully asynchronous, non-blocking mode with guaranteed context delivery, strict safety controls over tool execution, and end-to-end tracing of agent thought processes.
+Unlike fragile, linear automation scripts and traditional synchronous RAG systems, this platform aims to provide a resilient ecosystem. It enables running a local reasoning loop (Thought -> Action -> Observation) in a fully asynchronous, non-blocking mode with guaranteed context delivery, strict safety controls over tool execution, and tracing of agent thought processes in ClickHouse.
 
 ## 🏗️ Architecture & Core Components
 The system is built as an Event-Driven Microservice Architecture (EDA) on the **.NET 10** platform, orchestrated via MassTransit and RabbitMQ. Each stage of model reasoning, code execution, or agent interaction is isolated and does not block web server threads.
@@ -22,7 +22,7 @@ The system is built as an Event-Driven Microservice Architecture (EDA) on the **
    * Architecturally decoupled, allowing seamless future integration of Web dashboards, Telegram bots, or IDE extensions without changes to the backend.
 2. 🚪 **Gateway Service (Minimal API):**
    * Provides the entry point for user or system triggers.
-   * Manages sessions, security context (JWT), and real-time streaming of agent responses via Server-Sent Events (SSE).
+   * Accepts prompts, publishes commands to the bus and streams agent responses in real time via Server-Sent Events (SSE). Authentication is not implemented yet.
 3. 🧠 **Agent Orchestrator Service (Kernel Core):**
    * The backend core of the system, implementing the agent execution loop (Agent Loop) on top of `Microsoft.Extensions.AI` (`IChatClient`) abstractions.
    * Responsible for orchestrating the hierarchy of agent processes and managing distributed state (State Management).
@@ -33,7 +33,7 @@ The system is built as an Event-Driven Microservice Architecture (EDA) on the **
    * **Validation & Criticism Loop:** Automatically validates agent outputs by triggering compilation pipelines (`dotnet build`), running test suites (`dotnet test`), and analyzing runtime diagnostics or build errors to pipe structured feedback back into the Orchestrator loop.
 5. 🧩 **Data & Embedding Worker:**
    * A background service for parsing, tokenizing, and semantically analyzing incoming data streams.
-   * Responsible for generating vector embeddings via local Ollama models (`nomic-embed-text`) and indexing them.
+   * Responsible for generating vector embeddings via local Ollama models (`all-minilm:l6-v2`) and indexing them.
 
 ### Integration Flow
 ```text
@@ -79,7 +79,7 @@ Instead of synchronously waiting for a local LLM response within an HTTP thread,
 
 ### Runtime Benefits
 * **Resilient Scalability:** Slow text generation by a local CPU-bound Ollama instance or temporary unavailability of external APIs does not lead to system failures. Messages are buffered within RabbitMQ queues, Kestrel threads remain unblocked, and process memory leaks are eliminated.
-* **Production-Grade Observability:** The lifecycle of each executed task is tagged with a unique `CorrelationId`. Distributed tracing logs are exported via OpenTelemetry into Jaeger, allowing second-by-second analysis of the exact toolchains invoked by each agent.
+* **Observability:** The lifecycle of each executed task is tagged with a unique `CorrelationId`. Every reasoning step and tool call is written to the ClickHouse `thought_logs` table, allowing analysis of the exact toolchains invoked by each agent. OpenTelemetry tracing is not implemented yet.
 
 ---
 
@@ -92,6 +92,18 @@ The system separates transactional runtime load from heavy analytical data strea
 * Database interaction is fully driven by Entity Framework Core on .NET 10.
 
 ### 2. OLAP Text Stream & Thought Logs: ClickHouse
-* Collects and aggregates distributed system logs across the entire multi-agent runtime via Serilog.
+* Stores reasoning traces of the multi-agent runtime.
 * Functions as a persistent analytical storage for **Thought Logs** (granular LLM reasoning traces). Every step of the agent loop, including the internal monologue, chosen tool arguments, and execution metrics, is streamed into ClickHouse.
-* Leverages ClickHouse's built-in vector functions (such as `cosineDistance`) to perform background anomaly detection within agent behavior and automate MAS quality audits without degrading the performance of the primary transactional database.
+* Analytical use of ClickHouse vector functions for anomaly detection is a planned direction and is not implemented yet.
+
+---
+
+## 📚 Documentation
+* [User Guide](docs/user-guide.md) — installation, startup, usage of the terminal client and the HTTP API, configuration reference and troubleshooting.
+* [Architecture Reference](docs/architecture.md) — services, messages, saga, agent loop, tools, safety controls and storage.
+* [PoC Roadmap](docs/proof-of-concept/roadmap.md) — implementation plan and task statuses.
+* [Agentic Workflow](docs/agent-workflow.md) — target workflow for code analysis and contract design.
+* [Coding Standards](CODING_STANDARDS.md), [Contribution Guidelines](CONTRIBUTING.md) and [Documentation Guidelines](docs/documentation-guidelines.md).
+
+## 🚧 Project Status
+The repository contains a proof of concept that is being implemented according to the roadmap. It is not a finished or production-ready product.

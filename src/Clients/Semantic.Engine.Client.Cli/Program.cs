@@ -1,109 +1,51 @@
-﻿using System.Text;
-using Microsoft.Extensions.AI;
+﻿using Microsoft.Extensions.Configuration;
+using Semantic.Engine.Client.Cli;
+using Semantic.Engine.Client.Cli.Gateway;
+using Semantic.Engine.Client.Cli.Options;
+using Semantic.Engine.Client.Cli.Rendering;
+using Spectre.Console;
 
-namespace Semantic.Engine.Client.Cli;
+IConfigurationRoot configuration = new ConfigurationBuilder()
+    .SetBasePath(AppContext.BaseDirectory)
+    .AddJsonFile("appsettings.json", optional: false)
+    .AddEnvironmentVariables(prefix: "SEMANTIC_ENGINE_")
+    .AddCommandLine(args)
+    .Build();
 
-internal class Program
+GatewayOptions gatewayOptions;
+RenderingOptions renderingOptions;
+try
 {
-    private static async Task Main(string[] args)
-    {
-        const string ollamaEndpoint = "http://localhost:11434";
-        const string modelId = "qwen2.5-coder:7b";
-
-        OllamaChatClient chatClient = new(new Uri(ollamaEndpoint), modelId);
-
-        // This list will accumulate the entire conversation state
-        var conversationHistory = new List<ChatMessage>
-        {
-            new(ChatRole.System, "You are an expert C# architect inside Semantic.Engine. Remember the code context precisely.")
-        };
-
-        Console.WriteLine("======================================================================");
-        Console.WriteLine($" Semantic.Engine.Cli - Persistent Context Session Enabled");
-        Console.WriteLine("======================================================================");
-
-        while (true)
-        {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write("\nUser (Press Ctrl+Enter to submit):\n");
-            Console.ResetColor();
-
-            StringBuilder promptBuilder = new();
-
-            while (true)
-            {
-                ConsoleKeyInfo keyInfo = Console.ReadKey(intercept: true);
-
-                if (keyInfo.Key == ConsoleKey.Enter && (keyInfo.Modifiers & ConsoleModifiers.Control) != 0)
-                {
-                    Console.WriteLine();
-                    break;
-                }
-
-                if (keyInfo.Key == ConsoleKey.Enter)
-                {
-                    promptBuilder.AppendLine();
-                    Console.WriteLine();
-                    continue;
-                }
-
-                if (keyInfo.Key == ConsoleKey.Backspace)
-                {
-                    if (promptBuilder.Length > 0)
-                    {
-                        promptBuilder.Remove(promptBuilder.Length - 1, 1);
-                        Console.Write("\b \b");
-                    }
-                    continue;
-                }
-
-                if (keyInfo.KeyChar != '\0')
-                {
-                    promptBuilder.Append(keyInfo.KeyChar);
-                    Console.Write(keyInfo.KeyChar);
-                }
-            }
-
-            string userPrompt = promptBuilder.ToString().Trim();
-
-            if (string.IsNullOrWhiteSpace(userPrompt)) continue;
-            if (userPrompt.Equals("exit", StringComparison.OrdinalIgnoreCase)) break;
-
-            // 1. Add the current user prompt to the persistent memory block
-            conversationHistory.Add(new ChatMessage(ChatRole.User, userPrompt));
-
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("\nAgent: ");
-            Console.ResetColor();
-
-            StringBuilder assistantResponseBuilder = new();
-
-            try
-            {
-                // 2. Pass the WHOLE history object, not just a single string payload
-                var responseChunks = chatClient.GetStreamingResponseAsync(conversationHistory);
-
-                await foreach (var chunk in responseChunks)
-                {
-                    if (chunk.Text != null)
-                    {
-                        Console.Write(chunk.Text);
-                        // Accumulate the incoming model stream tokens
-                        assistantResponseBuilder.Append(chunk.Text);
-                    }
-                }
-
-                Console.WriteLine();
-
-                // 3. Save the full model response into history so it is remembered in the next turn
-                conversationHistory.Add(new ChatMessage(ChatRole.Assistant, assistantResponseBuilder.ToString()));
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"\n[Error]: Streaming failed. Details: {ex.Message}");
-                Console.ResetColor();
-            }
-        }
-    }
+    gatewayOptions = OptionsLoader.Load<GatewayOptions>(configuration, GatewayOptions.SectionName);
+    renderingOptions = OptionsLoader.Load<RenderingOptions>(configuration, RenderingOptions.SectionName);
 }
+catch (InvalidOperationException exception)
+{
+    AnsiConsole.MarkupLine($"[red]Configuration error:[/] {Markup.Escape(exception.Message)}");
+    return 1;
+}
+
+using CancellationTokenSource shutdown = new();
+Console.CancelKeyPress += (_, eventArgs) =>
+{
+    eventArgs.Cancel = true;
+    shutdown.Cancel();
+};
+
+// The event stream is long-lived, so the HTTP client has no global timeout; request timeouts are applied per call
+using HttpClient httpClient = new()
+{
+    BaseAddress = new Uri(gatewayOptions.BaseUrl),
+    Timeout = Timeout.InfiniteTimeSpan
+};
+if (!string.IsNullOrEmpty(gatewayOptions.ApiKey))
+{
+    httpClient.DefaultRequestHeaders.Add("X-Api-Key", gatewayOptions.ApiKey);
+}
+
+using GatewayClient gateway = new(httpClient, gatewayOptions);
+TurnRenderer renderer = new(AnsiConsole.Console, renderingOptions);
+ChatSession session = new(AnsiConsole.Console, gateway, renderer);
+
+await session.RunAsync(shutdown.Token);
+return 0;

@@ -8,6 +8,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.5.11" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.12" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Semantic.Engine.Contracts\Semantic.Engine.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Semantic.Engine.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Templates/**/*.template" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -11,4 +11,10 @@
     <Project Path="src/Services/Semantic.Engine.Workers.Data/Semantic.Engine.Workers.Data.csproj" Id="8930bfdd-d3fd-457f-886e-4e2b34bc419f" />
     <Project Path="src/Services/Semantic.Engine.Workers.Tools/Semantic.Engine.Workers.Tools.csproj" Id="824c928a-9e7a-40cb-bdd4-b34eba6ef581" />
   </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Semantic.Engine.Contracts/Semantic.Engine.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Semantic.Engine.UnitTests/Semantic.Engine.UnitTests.csproj" />
+  </Folder>
 </Solution>

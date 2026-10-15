@@ -1,6 +1,22 @@
 @Semantic.Engine.Gateway_HostAddress = http://localhost:5145
 
-GET {{Semantic.Engine.Gateway_HostAddress}}/weatherforecast/
-Accept: application/json
+### Start a session; the response contains the sessionId
+POST {{Semantic.Engine.Gateway_HostAddress}}/api/agent/session/start
+Content-Type: application/json
 
-###
+{
+  "prompt": "Fix the syntax errors in this class: public class A { void M( { } }"
+}
+
+### Subscribe to the Server-Sent Events stream of a session
+GET {{Semantic.Engine.Gateway_HostAddress}}/api/agent/session/00000000-0000-0000-0000-000000000000/stream
+Accept: text/event-stream
+
+### Send a follow-up prompt into an existing session
+POST {{Semantic.Engine.Gateway_HostAddress}}/api/agent/prompt
+Content-Type: application/json
+
+{
+  "sessionId": "00000000-0000-0000-0000-000000000000",
+  "prompt": "Add XML documentation."
+}

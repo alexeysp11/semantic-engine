@@ -45,7 +45,28 @@ services:
       - metabase_data:/metabase-data
     restart: always
 
+  # 4. ClickHouse for OLAP thought logs (granular LLM reasoning traces)
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: semantic-engine-clickhouse
+    environment:
+      CLICKHOUSE_USER: admin
+      CLICKHOUSE_PASSWORD: secret_password
+      CLICKHOUSE_DB: semantic_engine
+    ports:
+      - "8123:8123"   # HTTP interface used by the Orchestrator
+      - "9000:9000"   # Native protocol
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./infra/clickhouse/init:/docker-entrypoint-initdb.d:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    restart: always
+
 volumes:
   postgres_data:
   rabbitmq_data:
   metabase_data:
+  clickhouse_data:
